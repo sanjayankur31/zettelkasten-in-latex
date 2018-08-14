@@ -17,7 +17,7 @@ add_entry ()
     if [ -n "$TMUX" ]
     then
         echo "Setting tmux buffer for your convenience."
-        tmux set-buffer "$zettel"
+        tmux set-buffer "$filename"
     else
         echo "Not using a tmux session. Not setting buffer."
     fi
