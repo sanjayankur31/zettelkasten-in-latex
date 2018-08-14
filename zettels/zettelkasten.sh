@@ -5,11 +5,14 @@ timenow="$(date +%G%m%d%H%M)"
 template_file="zettelkasten-template.tex"
 note_heading=""
 filename=""
+entry_to_compile=""
 
 add_entry ()
 {
     filename="$timenow-$note_heading.tex"
     cp "$template_file" "$filename"
+
+    echo "Created $filename"
 
     if [ -n "$TMUX" ]
     then
@@ -23,16 +26,39 @@ add_entry ()
 
 edit_latest ()
 {
-    newest_zettel=$(ls -- *tex | tail -1)
+    newest_zettel=$(ls -- 2*tex | tail -1)
     $MY_EDITOR "$newest_zettel"
 }
 
+compile_all ()
+{
+    echo "Compiling all entries."
+    for i in "*.tex" ; do
+      if ! latexmk -pdf -recorder -pdflatex="pdflatex -interaction=nonstopmode --shell-escape -synctex=1" -use-make -bibtex "$i"; then
+            echo "Compilation failed. Exiting."
+            clean
+            exit -1
+        fi
+      clean
+    done
+}
 
 clean ()
 {
     echo "Cleaning up.."
     rm -fv -- *.aux *.bbl *.blg *.log *.nav *.out *.snm *.toc *.dvi *.vrb *.bcf *.run.xml *.cut *.lo* *.brf*
     latexmk -c
+}
+
+compile_specific ()
+{
+    echo "Compiling $entry_to_compile"
+    if ! latexmk -pdf -recorder -pdflatex="pdflatex -interaction=nonstopmode --shell-escape -synctex=1" -use-make -bibtex "$entry_to_compile"; then
+        echo "Compilation failed. Exiting."
+        clean
+        exit -1
+    fi
+    clean
 }
 
 usage ()
@@ -52,6 +78,10 @@ usage ()
 
     -c clean temporary latex files
 
+    -p compile all entries
+
+    -s <entry> entry to compile
+
 EOF
 
 }
@@ -61,7 +91,7 @@ if [ "$#" -eq 0 ]; then
     exit 0
 fi
 
-while getopts "n:hce" OPTION
+while getopts "s:n:hcep" OPTION
 do
     case $OPTION in
         n)
@@ -71,6 +101,19 @@ do
             ;;
         c)
             clean
+            exit 0
+            ;;
+        e)
+            edit_latest
+            exit 0
+            ;;
+        p)
+            compile_all
+            exit 0
+            ;;
+        s)
+            entry_to_compile=$OPTARG
+            compile_specific
             exit 0
             ;;
         h)
