@@ -6,6 +6,7 @@ template_file="zettelkasten-template.tex"
 note_heading=""
 filename=""
 entry_to_compile=""
+kw_regex_to_search=""
 
 add_entry ()
 {
@@ -50,6 +51,18 @@ clean ()
     latexmk -c
 }
 
+find_keywords()
+{
+    regex="Keywords:.*$kw_regex_to_search"
+    if command -v ag >/dev/null 2>&1; then
+        ag -i --tex "$regex"
+    else
+        echo "ag not found. Falling back on to grep"
+        grep -Ei "$regex" -- *.tex
+    fi
+
+}
+
 compile_specific ()
 {
     echo "Compiling $entry_to_compile"
@@ -82,6 +95,20 @@ usage ()
 
     -s <entry> entry to compile
 
+    -g <regex>
+        this is passed to the 'ag' command:
+        ag -i --tex 'Keywords: <regex>'
+
+        An example regex that will search for two keywords is: (keyword1|keyword2)
+        ag -i --tex 'Keywords: (keyword1|keyword2)>'
+
+        ag can be obtained here: https://github.com/ggreer/the_silver_searcher
+        If ag is not found, it falls back to using grep.
+
+    Written by Ankur Sinha mainly for personal use. However, comments for
+    improvements are always welcome.
+    https://github.com/sanjayankur31/zettelkasten-in-latex
+
 EOF
 
 }
@@ -91,7 +118,7 @@ if [ "$#" -eq 0 ]; then
     exit 0
 fi
 
-while getopts "s:n:hcep" OPTION
+while getopts "s:n:hcepg:" OPTION
 do
     case $OPTION in
         n)
@@ -114,6 +141,11 @@ do
         s)
             entry_to_compile=$OPTARG
             compile_specific
+            exit 0
+            ;;
+        g)
+            kw_regex_to_search=$OPTARG
+            find_keywords
             exit 0
             ;;
         h)
