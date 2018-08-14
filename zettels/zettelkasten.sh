@@ -49,6 +49,8 @@ clean ()
 {
     echo "Cleaning up.."
     rm -fv -- *.aux *.bbl *.blg *.log *.nav *.out *.snm *.toc *.dvi *.vrb *.bcf *.run.xml *.cut *.lo* *.brf*
+    rm -fr _minted*
+    rm -fr *.synctex.gz
     latexmk -c
 }
 
