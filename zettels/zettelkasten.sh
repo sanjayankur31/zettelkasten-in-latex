@@ -3,14 +3,14 @@
 MY_EDITOR="vimx --servername $(pwgen 8 1)"
 timenow="$(date +%G%m%d%H%M)"
 template_file="zettelkasten-template.tex"
-note_heading=""
+note_title=""
 filename=""
 entry_to_compile=""
 kw_regex_to_search=""
 
 add_entry ()
 {
-    filename="$timenow-$note_heading.tex"
+    filename="$timenow-$note_title.tex"
     cp "$template_file" "$filename"
 
     echo "Created $filename"
@@ -33,8 +33,9 @@ edit_latest ()
 
 compile_all ()
 {
-    echo "Compiling all entries."
-    for i in "*.tex" ; do
+    echo "Compiling all entries. This may take a while."
+    sleep 2
+    for i in *.tex ; do
       if ! latexmk -pdf -recorder -pdflatex="pdflatex -interaction=nonstopmode --shell-escape -synctex=1" -use-make -bibtex "$i"; then
             echo "Compilation failed. Exiting."
             clean
@@ -65,6 +66,12 @@ find_keywords()
 
 compile_specific ()
 {
+    if  [ ! -f  "$entry_to_compile" ];
+    then
+        echo "File $entry_to_compile could not be found."
+        exit -1
+    fi
+
     echo "Compiling $entry_to_compile"
     if ! latexmk -pdf -recorder -pdflatex="pdflatex -interaction=nonstopmode --shell-escape -synctex=1" -use-make -bibtex "$entry_to_compile"; then
         echo "Compilation failed. Exiting."
@@ -79,17 +86,20 @@ usage ()
     cat << EOF
     usage: $0 options
 
-    Master script file that provides functions to maintain a journal using LaTeX.
+    Helper script that provides functions to maintain a zettelkasten using LaTeX.
 
     OPTIONS:
     -h  Show this message and quit
 
-    -n  <note heading>
-        Add new zettel with note heading
+    -n  <note title>
+        Create new zettel file with note title
+
+        Please avoid spaces in this---some LaTeX packages do not deal well with
+        them.
 
     -e open latest zettel in \$MY_EDITOR
 
-    -c clean temporary latex files
+    -c clean temporary LaTeX files
 
     -p compile all entries
 
@@ -122,7 +132,7 @@ while getopts "s:n:hcepg:" OPTION
 do
     case $OPTION in
         n)
-            note_heading=$OPTARG
+            note_title=$OPTARG
             add_entry
             exit 0
             ;;
